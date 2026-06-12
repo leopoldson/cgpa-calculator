@@ -46,7 +46,7 @@ function SplashScreen({ onNext }) {
         <div style={styles.splashIcon}>🎓</div>
         <h1 style={styles.splashTitle}>CGPA Calculator</h1>
         <p style={styles.splashSub}>
-          developed by Leo ⭐
+          developed by Leo☆ 
         </p>
         <button style={styles.splashBtn} onClick={onNext}>
           Get Started
@@ -148,15 +148,52 @@ function CalculatorScreen({ onBack }) {
   if (step === "system") {
     return (
       <div style={styles.screen}>
-        <TopBar title="Select GPA System" onBack={onBack} />
+        <TopBar title="" onBack={onBack} />
         <div style={styles.body}>
-          <p style={styles.prompt}>Which grading system does your school use?</p>
-          {["4.0", "5.0"].map((s) => (
-            <button key={s} style={styles.systemCard} onClick={() => handleSystemSelect(s)}>
-              <span style={styles.systemLabel}>{s} Scale</span>
-              <span style={styles.systemArrow}>→</span>
-            </button>
-          ))}
+          {/* Hero text */}
+          <div style={{ marginBottom: 36, marginTop: 8 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#6366f1", letterSpacing: 0.5, textTransform: "uppercase", margin: "0 0 8px" }}>Step 1 of 1</p>
+            <h2 style={{ fontSize: 26, fontWeight: 700, color: "#111827", margin: "0 0 8px", lineHeight: 1.2 }}>Which grading system does your school use?</h2>
+            <p style={{ fontSize: 14, color: "#9ca3af", margin: 0, lineHeight: 1.5 }}>Your CGPA will be calculated based on this scale.</p>
+          </div>
+
+          {/* Side-by-side scale cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            {[
+              { s: "4.0", emoji: "🇺🇸", desc: "Used by most private universities", grades: ["A", "B", "C", "D", "F"] },
+              { s: "5.0", emoji: "🇳🇬", desc: "Common in Nigerian public universities", grades: ["A", "B", "C", "D", "E", "F"] },
+            ].map(({ s, emoji, desc, grades }) => (
+              <button
+                key={s}
+                onClick={() => handleSystemSelect(s)}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  background: "#f9fafb",
+                  border: "2px solid #e5e7eb",
+                  borderRadius: 20,
+                  padding: "20px 16px",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  transition: "border-color 0.2s, box-shadow 0.2s",
+                  gap: 10,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(99,102,241,0.12)"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.boxShadow = "none"; }}
+              >
+                <span style={{ fontSize: 28 }}>{emoji}</span>
+                <span style={{ fontSize: 28, fontWeight: 800, color: "#111827", letterSpacing: -1 }}>{s}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", background: "#ede9fe", borderRadius: 6, padding: "2px 7px" }}>Scale</span>
+                <p style={{ fontSize: 12, color: "#6b7280", margin: 0, lineHeight: 1.4 }}>{desc}</p>
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
+                  {grades.map(g => (
+                    <span key={g} style={{ fontSize: 11, fontWeight: 700, color: "#374151", background: "#e5e7eb", borderRadius: 5, padding: "1px 6px" }}>{g}</span>
+                  ))}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -300,7 +337,7 @@ function TopBar({ title, onBack, backLabel = "Back" }) {
     <div style={styles.topBar}>
       <button style={styles.backBtn} onClick={onBack}>‹ {backLabel}</button>
       <span style={styles.topBarTitle}>{title}</span>
-      <span style={{ width: 64 }} />
+      <span style={{ minWidth: 64, maxWidth: 120 }} />
     </div>
   );
 }
@@ -336,7 +373,8 @@ export default function App() {
   return (
     <>
       <style>{`
-        html, body { margin: 0; padding: 0; }
+        html, body { margin: 0; padding: 0; font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, sans-serif; }
+        *, *::before, *::after { box-sizing: border-box; font-family: inherit; }
         .app-shell {
           min-height: 100vh;
           background: #e5e7eb;
@@ -344,7 +382,7 @@ export default function App() {
           align-items: center;
           justify-content: center;
           padding: 20px;
-          font-family: 'Segoe UI', system-ui, sans-serif;
+          font-family: -apple-system, 'SF Pro Text', 'SF Pro Display', BlinkMacSystemFont, sans-serif;
           box-sizing: border-box;
         }
         .app-inner {
@@ -499,8 +537,10 @@ const styles = {
     fontWeight: 600,
     cursor: "pointer",
     padding: "4px 8px",
-    width: 80,
+    minWidth: 64,
+    maxWidth: 120,
     textAlign: "left",
+    whiteSpace: "nowrap",
   },
   topBarTitle: { fontWeight: 700, fontSize: 16, color: "#111827" },
   // System
