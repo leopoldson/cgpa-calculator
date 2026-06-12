@@ -46,7 +46,7 @@ function SplashScreen({ onNext }) {
         <div style={styles.splashIcon}>🎓</div>
         <h1 style={styles.splashTitle}>CGPA Calculator</h1>
         <p style={styles.splashSub}>
-          developed by Leo☆
+          developed by Leo ⭐
         </p>
         <button style={styles.splashBtn} onClick={onNext}>
           Get Started
@@ -160,9 +160,9 @@ function CalculatorScreen({ onBack }) {
           {/* Side-by-side scale cards */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             {[
-              { s: "4.0", desc: "Used by most private universities", grades: ["A", "B", "C", "D", "F"] },
-              { s: "5.0", desc: "Common in Nigerian public universities", grades: ["A", "B", "C", "D", "E", "F"] },
-            ].map(({ s, desc, grades }) => (
+              { s: "4.0", emoji: "🇺🇸", desc: "Used by most private universities", grades: ["A", "B", "C", "D", "F"] },
+              { s: "5.0", emoji: "🇳🇬", desc: "Common in Nigerian public universities", grades: ["A", "B", "C", "D", "E", "F"] },
+            ].map(({ s, emoji, desc, grades }) => (
               <button
                 key={s}
                 onClick={() => handleSystemSelect(s)}
@@ -182,7 +182,9 @@ function CalculatorScreen({ onBack }) {
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(99,102,241,0.12)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.boxShadow = "none"; }}
               >
+                <span style={{ fontSize: 28 }}>{emoji}</span>
                 <span style={{ fontSize: 28, fontWeight: 800, color: "#111827", letterSpacing: -1 }}>{s}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", background: "#ede9fe", borderRadius: 6, padding: "2px 7px" }}>Scale</span>
                 <p style={{ fontSize: 12, color: "#6b7280", margin: 0, lineHeight: 1.4 }}>{desc}</p>
                 <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
                   {grades.map(g => (
@@ -317,9 +319,9 @@ function CalculatorScreen({ onBack }) {
             <div className="lock-overlay">
               <span className="lock-icon">🔒</span>
               <p className="lock-title">Your result is ready</p>
-              <p className="lock-sub">This is a demo version. Contact the developer to get the full app with your results unlocked.</p>
-              <button className="lock-btn" onClick={() => window.open("https://wa.link/u1i8nq", "_blank")}>
-                Contact the Developer
+              <p className="lock-sub">This is a demo version. Contact Leo to get the full app with your results unlocked.</p>
+              <button className="lock-btn" onClick={() => window.open("mailto:favourleopold@gmail.com?subject=CGPA Calculator - Full Access")}>
+                Contact Leo
               </button>
             </div>
           </div>
@@ -341,6 +343,11 @@ function CalculatorScreen({ onBack }) {
           </div>
 
           <button style={styles.homeBtn} onClick={onBack}>← Back to Home</button>
+
+          {/* Leo footer */}
+          <p style={styles.leoFooter}>
+            CGPA Calculator · developed by <span style={styles.leoName}>Leo✮</span>
+          </p>
         </div>
       </div>
     );
@@ -718,5 +725,16 @@ const styles = {
     fontSize: 15,
     fontWeight: 700,
     cursor: "pointer",
+  },
+  leoFooter: {
+    marginTop: 28,
+    textAlign: "center",
+    fontSize: 12,
+    color: "#6b7280",
+    letterSpacing: 0.3,
+  },
+  leoName: {
+    color: "#6366f1",
+    fontWeight: 700,
   },
 };
