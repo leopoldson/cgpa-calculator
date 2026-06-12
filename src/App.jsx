@@ -46,7 +46,7 @@ function SplashScreen({ onNext }) {
         <div style={styles.splashIcon}>🎓</div>
         <h1 style={styles.splashTitle}>CGPA Calculator</h1>
         <p style={styles.splashSub}>
-          developed by Leo ⭐
+          developed by <span style={{ color: "#c4b5fd", fontWeight: 700 }}>Leo✮</span>
         </p>
         <button style={styles.splashBtn} onClick={onNext}>
           Get Started
@@ -67,12 +67,28 @@ function HomeScreen({ onCalculate }) {
         <p style={styles.homeSub}>
           Add your courses, grades, and units — we'll crunch your CGPA instantly.
         </p>
+
+        <div style={{ display: "flex", gap: 10, marginTop: 24, flexWrap: "wrap", justifyContent: "center" }}>
+          {["4.0 Scale", "5.0 Scale"].map((label) => (
+            <span key={label} style={{
+              background: "#f3f4f6",
+              color: "#6b7280",
+              borderRadius: 100,
+              padding: "5px 12px",
+              fontSize: 12,
+              fontWeight: 600,
+            }}>{label}</span>
+          ))}
+        </div>
       </div>
+
       <div style={styles.homeBottom}>
         <button style={styles.primaryBtn} onClick={onCalculate}>
           Calculate Your CGPA
         </button>
-        <p style={styles.homeHint}>Supports both 4.0 and 5.0 grading systems</p>
+        <p style={styles.leoFooter}>
+          CGPA Calculator · developed by <span style={styles.leoName}>Leo✮</span>
+        </p>
       </div>
     </div>
   );
@@ -85,8 +101,10 @@ function CalculatorScreen({ onBack }) {
   const [current, setCurrent] = useState({ code: "", title: "", units: "", grade: null });
   const [entryStep, setEntryStep] = useState("code"); // code | title | units | grade
   const [result, setResult] = useState(null);
+  const [unitsError, setUnitsError] = useState(false);
 
   const gradeSystem = system ? GRADE_SYSTEMS[system] : null;
+  const entrySteps = ["code", "title", "units", "grade"];
 
   function handleSystemSelect(s) {
     setSystem(s);
@@ -106,14 +124,32 @@ function CalculatorScreen({ onBack }) {
 
   function handleUnitsNext() {
     const u = parseInt(current.units);
-    if (!u || u < 1 || u > 6) return;
+    if (!u || u < 1 || u > 5) {
+      setUnitsError(true);
+      return;
+    }
     setEntryStep("grade");
+  }
+
+  function handleEntryBack() {
+    const idx = entrySteps.indexOf(entryStep);
+    if (idx > 0) {
+      setEntryStep(entrySteps[idx - 1]);
+    } else {
+      if (courses.length > 0) {
+        const prev = courses[courses.length - 1];
+        setCourses((c) => c.slice(0, -1));
+        setCurrent({ code: prev.code, title: prev.title, units: String(prev.units), grade: null });
+        setEntryStep("grade");
+      } else {
+        setStep("system");
+      }
+    }
   }
 
   function handleGradeSelect(g) {
     const newCourse = { ...current, grade: g };
     setCurrent((c) => ({ ...c, grade: g }));
-    // small delay so user sees the selection before moving on
     setTimeout(() => {
       setCourses((prev) => [...prev, newCourse]);
       setCurrent({ code: "", title: "", units: "", grade: null });
@@ -150,19 +186,17 @@ function CalculatorScreen({ onBack }) {
       <div style={styles.screen}>
         <TopBar title="" onBack={onBack} />
         <div style={styles.body}>
-          {/* Hero text */}
           <div style={{ marginBottom: 36, marginTop: 8 }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: "#6366f1", letterSpacing: 0.5, textTransform: "uppercase", margin: "0 0 8px" }}>Step 1 of 1</p>
             <h2 style={{ fontSize: 26, fontWeight: 700, color: "#111827", margin: "0 0 8px", lineHeight: 1.2 }}>Which grading system does your school use?</h2>
             <p style={{ fontSize: 14, color: "#9ca3af", margin: 0, lineHeight: 1.5 }}>Your CGPA will be calculated based on this scale.</p>
           </div>
 
-          {/* Side-by-side scale cards */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             {[
-              { s: "4.0", emoji: "🇺🇸", desc: "Used by most private universities", grades: ["A", "B", "C", "D", "F"] },
-              { s: "5.0", emoji: "🇳🇬", desc: "Common in Nigerian public universities", grades: ["A", "B", "C", "D", "E", "F"] },
-            ].map(({ s, emoji, desc, grades }) => (
+              { s: "4.0", desc: "Used by most private universities", grades: ["A", "B", "C", "D", "F"] },
+              { s: "5.0", desc: "Common in Nigerian public universities", grades: ["A", "B", "C", "D", "E", "F"] },
+            ].map(({ s, desc, grades }) => (
               <button
                 key={s}
                 onClick={() => handleSystemSelect(s)}
@@ -182,9 +216,7 @@ function CalculatorScreen({ onBack }) {
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(99,102,241,0.12)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.boxShadow = "none"; }}
               >
-                <span style={{ fontSize: 28 }}>{emoji}</span>
                 <span style={{ fontSize: 28, fontWeight: 800, color: "#111827", letterSpacing: -1 }}>{s}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", background: "#ede9fe", borderRadius: 6, padding: "2px 7px" }}>Scale</span>
                 <p style={{ fontSize: 12, color: "#6b7280", margin: 0, lineHeight: 1.4 }}>{desc}</p>
                 <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
                   {grades.map(g => (
@@ -205,13 +237,9 @@ function CalculatorScreen({ onBack }) {
       <div style={styles.screen}>
         <TopBar
           title={`Course ${courses.length + 1}`}
-          onBack={courses.length > 0 ? () => {
-            setCourses((c) => c.slice(0, -1));
-            setEntryStep("code");
-          } : () => setStep("system")}
+          onBack={handleEntryBack}
         />
         <div style={styles.body}>
-          {/* Progress chips */}
           <div style={styles.chips}>
             {["code", "title", "units", "grade"].map((s, i) => (
               <div key={s} style={{
@@ -251,10 +279,39 @@ function CalculatorScreen({ onBack }) {
               label="Credit Units"
               placeholder="e.g. 3"
               value={current.units}
-              onChange={(v) => setCurrent((c) => ({ ...c, units: v }))}
+              onChange={(v) => { setCurrent((c) => ({ ...c, units: v })); setUnitsError(false); }}
               onNext={handleUnitsNext}
               numeric
             />
+          )}
+
+          {/* Units error modal */}
+          {unitsError && (
+            <div style={{
+              position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              zIndex: 999, padding: 24,
+            }}>
+              <div style={{
+                background: "#fff", borderRadius: 20, padding: "28px 24px",
+                maxWidth: 320, width: "100%", textAlign: "center",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+              }}>
+                <div style={{ fontSize: 36, marginBottom: 12 }}>⚠️</div>
+                <p style={{ fontWeight: 800, fontSize: 17, color: "#111827", margin: "0 0 8px" }}>Invalid Credit Units</p>
+                <p style={{ fontSize: 14, color: "#6b7280", margin: "0 0 20px", lineHeight: 1.5 }}>
+                  Please enter a value between <strong>1 and 5</strong>.
+                </p>
+                <button
+                  onClick={() => setUnitsError(false)}
+                  style={{
+                    background: "#4f46e5", color: "#fff", border: "none",
+                    borderRadius: 12, padding: "12px 32px", fontSize: 15,
+                    fontWeight: 700, cursor: "pointer", width: "100%",
+                  }}
+                >Got it</button>
+              </div>
+            </div>
           )}
 
           {entryStep === "grade" && (
@@ -279,7 +336,6 @@ function CalculatorScreen({ onBack }) {
             </div>
           )}
 
-          {/* Course list */}
           {courses.length > 0 && (
             <div style={styles.courseList}>
               <p style={styles.courseListTitle}>{courses.length} course{courses.length > 1 ? "s" : ""} added</p>
@@ -308,7 +364,6 @@ function CalculatorScreen({ onBack }) {
         <TopBar title="Your Result" onBack={handleReset} backLabel="Start Over" />
         <div style={styles.body}>
 
-          {/* Locked result card */}
           <div style={{ position: "relative" }}>
             <div className="blurred" style={{ ...styles.resultCard, borderColor: honor.color }}>
               <p style={styles.resultLabel}>Your CGPA</p>
@@ -326,7 +381,6 @@ function CalculatorScreen({ onBack }) {
             </div>
           </div>
 
-          {/* Locked breakdown */}
           <div style={{ position: "relative", marginTop: 8 }}>
             <div className="blurred">
               <div style={styles.breakdownHeader}>Course Breakdown</div>
@@ -344,7 +398,6 @@ function CalculatorScreen({ onBack }) {
 
           <button style={styles.homeBtn} onClick={onBack}>← Back to Home</button>
 
-          {/* Leo footer */}
           <p style={styles.leoFooter}>
             CGPA Calculator · developed by <span style={styles.leoName}>Leo✮</span>
           </p>
@@ -541,7 +594,7 @@ const styles = {
   homeTitle: { fontSize: 26, fontWeight: 800, color: "#1e1b4b", margin: 0 },
   homeSub: { color: "#6b7280", fontSize: 15, marginTop: 10, lineHeight: 1.6 },
   homeBottom: {
-    padding: "24px 32px 48px",
+    padding: "24px 32px 36px",
     display: "flex",
     flexDirection: "column",
     alignItems: "stretch",
@@ -727,11 +780,12 @@ const styles = {
     cursor: "pointer",
   },
   leoFooter: {
-    marginTop: 28,
+    marginTop: 20,
     textAlign: "center",
     fontSize: 12,
     color: "#6b7280",
     letterSpacing: 0.3,
+    margin: "20px 0 0",
   },
   leoName: {
     color: "#6366f1",
