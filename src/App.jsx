@@ -46,7 +46,7 @@ function SplashScreen({ onNext }) {
         <div style={styles.splashIcon}>🎓</div>
         <h1 style={styles.splashTitle}>CGPA Calculator</h1>
         <p style={styles.splashSub}>
-          developed by Leo ⭐
+          developed by Leo☆
         </p>
         <button style={styles.splashBtn} onClick={onNext}>
           Get Started
