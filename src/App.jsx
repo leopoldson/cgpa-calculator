@@ -46,7 +46,7 @@ function SplashScreen({ onNext }) {
         <div style={styles.splashIcon}>🎓</div>
         <h1 style={styles.splashTitle}>CGPA Calculator</h1>
         <p style={styles.splashSub}>
-          developed by Leo☆ 
+          developed by Leo ⭐
         </p>
         <button style={styles.splashBtn} onClick={onNext}>
           Get Started
@@ -307,23 +307,40 @@ function CalculatorScreen({ onBack }) {
       <div style={styles.screen}>
         <TopBar title="Your Result" onBack={handleReset} backLabel="Start Over" />
         <div style={styles.body}>
-          <div style={{ ...styles.resultCard, borderColor: honor.color }}>
-            <p style={styles.resultLabel}>Your CGPA</p>
-            <p style={{ ...styles.resultCGPA, color: honor.color }}>{result.cgpa}</p>
-            <p style={{ ...styles.resultHonor, color: honor.color }}>{honor.label}</p>
-            <p style={styles.resultMeta}>{system} Scale · {result.totalUnits} Total Units</p>
+
+          {/* Locked result card */}
+          <div style={{ position: "relative" }}>
+            <div className="blurred" style={{ ...styles.resultCard, borderColor: honor.color }}>
+              <p style={styles.resultLabel}>Your CGPA</p>
+              <p style={{ ...styles.resultCGPA, color: honor.color }}>{result.cgpa}</p>
+              <p style={{ ...styles.resultHonor, color: honor.color }}>{honor.label}</p>
+              <p style={styles.resultMeta}>{system} Scale · {result.totalUnits} Total Units</p>
+            </div>
+            <div className="lock-overlay">
+              <span className="lock-icon">🔒</span>
+              <p className="lock-title">Your result is ready</p>
+              <p className="lock-sub">This is a demo version. Contact Leo to get the full app with your results unlocked.</p>
+              <button className="lock-btn" onClick={() => window.open("mailto:favourleopold@gmail.com?subject=CGPA Calculator - Full Access")}>
+                Contact Leo
+              </button>
+            </div>
           </div>
 
-          <div style={styles.breakdownHeader}>Course Breakdown</div>
-          {result.courses.map((c, i) => (
-            <div key={i} style={styles.breakdownRow}>
-              <div>
-                <span style={styles.bCode}>{c.code}</span>
-                {c.title && <span style={styles.bTitle}> — {c.title}</span>}
-              </div>
-              <span style={styles.bGrade}>{c.grade} pts × {c.units} units</span>
+          {/* Locked breakdown */}
+          <div style={{ position: "relative", marginTop: 8 }}>
+            <div className="blurred">
+              <div style={styles.breakdownHeader}>Course Breakdown</div>
+              {result.courses.map((c, i) => (
+                <div key={i} style={styles.breakdownRow}>
+                  <div>
+                    <span style={styles.bCode}>{c.code}</span>
+                    {c.title && <span style={styles.bTitle}> — {c.title}</span>}
+                  </div>
+                  <span style={styles.bGrade}>{c.grade} pts × {c.units} units</span>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
 
           <button style={styles.homeBtn} onClick={onBack}>← Back to Home</button>
         </div>
@@ -373,8 +390,29 @@ export default function App() {
   return (
     <>
       <style>{`
-        html, body { margin: 0; padding: 0; font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&display=swap');
+        html, body { margin: 0; padding: 0; font-family: 'Geist', sans-serif; }
         *, *::before, *::after { box-sizing: border-box; font-family: inherit; }
+        .blurred { filter: blur(10px); user-select: none; pointer-events: none; }
+        .lock-overlay {
+          position: absolute; inset: 0;
+          display: flex; flex-direction: column;
+          align-items: center; justify-content: center;
+          background: rgba(255,255,255,0.6);
+          backdrop-filter: blur(2px);
+          z-index: 10; gap: 10px; padding: 24px; text-align: center;
+        }
+        .lock-icon { font-size: 36px; }
+        .lock-title { font-size: 17px; font-weight: 700; color: #111827; margin: 0; }
+        .lock-sub { font-size: 13px; color: #6b7280; margin: 0; line-height: 1.5; }
+        .lock-btn {
+          margin-top: 6px;
+          background: #111827; color: #fff;
+          border: none; border-radius: 12px;
+          padding: 12px 28px; font-size: 14px;
+          font-weight: 600; cursor: pointer;
+          font-family: inherit;
+        }
         .app-shell {
           min-height: 100vh;
           background: #e5e7eb;
@@ -382,7 +420,7 @@ export default function App() {
           align-items: center;
           justify-content: center;
           padding: 20px;
-          font-family: -apple-system, 'SF Pro Text', 'SF Pro Display', BlinkMacSystemFont, sans-serif;
+          font-family: 'Geist', sans-serif;
           box-sizing: border-box;
         }
         .app-inner {
