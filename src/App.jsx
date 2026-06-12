@@ -46,9 +46,7 @@ function SplashScreen({ onNext }) {
         <div style={styles.splashIcon}>🎓</div>
         <h1 style={styles.splashTitle}>CGPA Calculator</h1>
         <p style={styles.splashSub}>
-          Developed by <strong>Favour Leopold</strong>
-          <br />
-          <span style={styles.splashClass}>Computer Science · OOU</span>
+          developed by Leo ⭐
         </p>
         <button style={styles.splashBtn} onClick={onNext}>
           Get Started
@@ -286,7 +284,7 @@ function CalculatorScreen({ onBack }) {
                 <span style={styles.bCode}>{c.code}</span>
                 {c.title && <span style={styles.bTitle}> — {c.title}</span>}
               </div>
-              <span style={styles.bGrade}>{c.grade} × {c.units}u</span>
+              <span style={styles.bGrade}>{c.grade} pts × {c.units} units</span>
             </div>
           ))}
 
@@ -336,40 +334,59 @@ export default function App() {
   const [screen, setScreen] = useState("splash");
 
   return (
-    <div style={styles.phone}>
-      <div style={styles.phoneInner}>
-        {screen === "splash" && <SplashScreen onNext={() => setScreen("home")} />}
-        {screen === "home" && <HomeScreen onCalculate={() => setScreen("calc")} />}
-        {screen === "calc" && <CalculatorScreen onBack={() => setScreen("home")} />}
+    <>
+      <style>{`
+        html, body { margin: 0; padding: 0; }
+        .app-shell {
+          min-height: 100vh;
+          background: #e5e7eb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          font-family: 'Segoe UI', system-ui, sans-serif;
+          box-sizing: border-box;
+        }
+        .app-inner {
+          width: 100%;
+          max-width: 480px;
+          min-height: 720px;
+          background: #fff;
+          border-radius: 36px;
+          box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          position: relative;
+        }
+        @media (max-width: 520px) {
+          .app-shell {
+            padding: 0;
+            background: #fff;
+            align-items: stretch;
+          }
+          .app-inner {
+            max-width: 100%;
+            min-height: 100vh;
+            border-radius: 0;
+            box-shadow: none;
+          }
+        }
+      `}</style>
+      <div className="app-shell">
+        <div className="app-inner">
+          {screen === "splash" && <SplashScreen onNext={() => setScreen("home")} />}
+          {screen === "home" && <HomeScreen onCalculate={() => setScreen("calc")} />}
+          {screen === "calc" && <CalculatorScreen onBack={() => setScreen("home")} />}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = {
-  phone: {
-    minHeight: "100vh",
-    background: "#e5e7eb",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-    fontFamily: "'Segoe UI', system-ui, sans-serif",
-  },
-  phoneInner: {
-    width: "100%",
-    maxWidth: 390,
-    minHeight: 720,
-    background: "#fff",
-    borderRadius: 36,
-    boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
-    overflow: "hidden",
-    display: "flex",
-    flexDirection: "column",
-    position: "relative",
-  },
   screen: {
     flex: 1,
     display: "flex",
@@ -408,7 +425,6 @@ const styles = {
     marginTop: 12,
     lineHeight: 1.6,
   },
-  splashClass: { fontSize: 13, opacity: 0.7 },
   splashBtn: {
     marginTop: 48,
     background: "#fff",
