@@ -31,10 +31,10 @@ const HONOR_ROLLS = {
   ],
 };
 
-function getHonor(cgpa, system) {
+function getHonor(gpa, system) {
   const rolls = HONOR_ROLLS[system];
   for (const r of rolls) {
-    if (cgpa >= r.min) return r;
+    if (gpa >= r.min) return r;
   }
   return rolls[rolls.length - 1];
 }
@@ -47,7 +47,7 @@ function SplashScreen({ onNext }) {
       <div style={styles.splashBg} />
       <div style={styles.splashContent}>
         <div style={styles.splashIcon}>🎓</div>
-        <h1 style={styles.splashTitle}>CGPA Calculator</h1>
+        <h1 style={styles.splashTitle}>GPA Calculator</h1>
         <p style={styles.splashSub}>
           Know your standing in seconds.
         </p>
@@ -68,7 +68,7 @@ function HomeScreen({ onCalculate }) {
         </div>
         <h2 style={styles.homeTitle}>Know Your Standing</h2>
         <p style={styles.homeSub}>
-          Add your courses, grades, and units — we'll crunch your CGPA instantly.
+          Add your courses, grades, and units — we'll crunch your GPA instantly.
         </p>
 
         <div style={{ display: "flex", gap: 10, marginTop: 24, flexWrap: "wrap", justifyContent: "center" }}>
@@ -87,7 +87,7 @@ function HomeScreen({ onCalculate }) {
 
       <div style={styles.homeBottom}>
         <button style={styles.primaryBtn} onClick={onCalculate}>
-          Calculate Your CGPA
+          Calculate Your GPA
         </button>
       </div>
     </div>
@@ -166,8 +166,8 @@ function CalculatorScreen({ onBack }) {
       totalPoints += c.grade * units;
       totalUnits += units;
     }
-    const cgpa = totalUnits > 0 ? totalPoints / totalUnits : 0;
-    setResult({ cgpa: cgpa.toFixed(2), totalUnits, courses });
+    const gpa = totalUnits > 0 ? totalPoints / totalUnits : 0;
+    setResult({ gpa: gpa.toFixed(2), totalUnits, courses });
     setStep("result");
   }
 
@@ -188,7 +188,7 @@ function CalculatorScreen({ onBack }) {
         <div style={styles.body}>
           <div style={{ marginBottom: 32, marginTop: 8 }}>
             <h2 style={{ fontSize: 26, fontWeight: 700, color: "#111827", margin: "0 0 8px", lineHeight: 1.2 }}>Which grading system does your school use?</h2>
-            <p style={{ fontSize: 14, color: "#9ca3af", margin: 0, lineHeight: 1.5 }}>Your CGPA will be calculated based on this scale.</p>
+            <p style={{ fontSize: 14, color: "#9ca3af", margin: 0, lineHeight: 1.5 }}>Your GPA will be calculated based on this scale.</p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -325,7 +325,7 @@ function CalculatorScreen({ onBack }) {
                 </div>
               ))}
               <button style={styles.calcBtn} onClick={handleCalculate}>
-                Calculate CGPA →
+                Calculate GPA →
               </button>
             </div>
           )}
@@ -336,7 +336,7 @@ function CalculatorScreen({ onBack }) {
 
   // ── Result ──
   if (step === "result") {
-    const honor = getHonor(parseFloat(result.cgpa), system);
+    const honor = getHonor(parseFloat(result.gpa), system);
     return (
       <div style={styles.screen}>
         <TopBar
@@ -350,8 +350,8 @@ function CalculatorScreen({ onBack }) {
           <div style={{ position: "relative" }}>
             <div style={{ ...styles.resultCard, borderColor: honor.color + "33" }}>
               <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: honor.color }} />
-              <p style={styles.resultLabel}>Your CGPA</p>
-              <p style={{ ...styles.resultCGPA, color: honor.color }}>{result.cgpa}</p>
+              <p style={styles.resultLabel}>Your GPA</p>
+              <p style={{ ...styles.resultGPA, color: honor.color }}>{result.gpa}</p>
               <p style={{ ...styles.resultHonor, color: honor.color }}>{honor.label}</p>
               <p style={styles.resultMeta}>{system} Scale · {result.totalUnits} Total Units</p>
             </div>
@@ -384,7 +384,7 @@ function exportAsPDF(result, system, honor) {
 
   doc.setFontSize(18);
   doc.setFont(undefined, "bold");
-  doc.text("CGPA Result", 14, 20);
+  doc.text("GPA Result", 14, 20);
 
   doc.setFontSize(11);
   doc.setFont(undefined, "normal");
@@ -392,7 +392,7 @@ function exportAsPDF(result, system, honor) {
 
   doc.setFontSize(14);
   doc.setFont(undefined, "bold");
-  doc.text(`CGPA: ${result.cgpa}  (${honor.label})`, 14, 40);
+  doc.text(`GPA: ${result.gpa}  (${honor.label})`, 14, 40);
   doc.setFontSize(11);
   doc.setFont(undefined, "normal");
   doc.text(`${system} Scale · ${result.totalUnits} Total Units`, 14, 47);
@@ -410,7 +410,7 @@ function exportAsPDF(result, system, honor) {
     headStyles: { fillColor: [17, 24, 39] },
   });
 
-  doc.save(`CGPA-Result-${result.cgpa}.pdf`);
+  doc.save(`GPA-Result-${result.gpa}.pdf`);
 }
 
 function buildRows(result) {
@@ -438,7 +438,7 @@ function exportAsCSV(result, system, honor) {
   const rows = buildRows(result);
   const header = Object.keys(rows[0] || { "Course Code": "", "Title": "", "Units": "", "Grade Points": "" });
   const lines = [
-    `CGPA,${result.cgpa}`,
+    `GPA,${result.gpa}`,
     `Honor,${honor.label}`,
     `Scale,${system}`,
     `Total Units,${result.totalUnits}`,
@@ -446,13 +446,13 @@ function exportAsCSV(result, system, honor) {
     header.join(","),
     ...rows.map((r) => header.map((h) => `"${String(r[h]).replace(/"/g, '""')}"`).join(",")),
   ];
-  downloadBlob(lines.join("\n"), `CGPA-Result-${result.cgpa}.csv`, "text/csv");
+  downloadBlob(lines.join("\n"), `GPA-Result-${result.gpa}.csv`, "text/csv");
 }
 
 function exportAsXLSX(result, system, honor) {
   const rows = buildRows(result);
   const summary = [
-    { Field: "CGPA", Value: result.cgpa },
+    { Field: "GPA", Value: result.gpa },
     { Field: "Honor", Value: honor.label },
     { Field: "Scale", Value: system },
     { Field: "Total Units", Value: result.totalUnits },
@@ -460,12 +460,12 @@ function exportAsXLSX(result, system, honor) {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Summary");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Courses");
-  XLSX.writeFile(wb, `CGPA-Result-${result.cgpa}.xlsx`);
+  XLSX.writeFile(wb, `GPA-Result-${result.gpa}.xlsx`);
 }
 
 function exportAsJSON(result, system, honor) {
   const payload = {
-    cgpa: result.cgpa,
+    gpa: result.gpa,
     honor: honor.label,
     scale: system,
     totalUnits: result.totalUnits,
@@ -477,7 +477,7 @@ function exportAsJSON(result, system, honor) {
       gradePoints: c.grade,
     })),
   };
-  downloadBlob(JSON.stringify(payload, null, 2), `CGPA-Result-${result.cgpa}.json`, "application/json");
+  downloadBlob(JSON.stringify(payload, null, 2), `GPA-Result-${result.gpa}.json`, "application/json");
 }
 
 function TopBar({ title, onBack, backLabel = "Back", right }) {
@@ -942,7 +942,7 @@ const styles = {
     boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 12px 32px -12px rgba(17,24,39,0.12)",
   },
   resultLabel: { color: "#9ca3af", fontSize: 12, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: 0.8 },
-  resultCGPA: { fontSize: 60, fontWeight: 900, margin: "10px 0 4px", letterSpacing: -2.5, fontVariantNumeric: "tabular-nums" },
+  resultGPA: { fontSize: 60, fontWeight: 900, margin: "10px 0 4px", letterSpacing: -2.5, fontVariantNumeric: "tabular-nums" },
   resultHonor: { fontSize: 16, fontWeight: 700, margin: 0 },
   resultMeta: { color: "#9ca3af", fontSize: 13, marginTop: 10 },
   breakdownHeader: { fontWeight: 700, fontSize: 12, color: "#9ca3af", marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.8 },
