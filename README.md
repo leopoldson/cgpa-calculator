@@ -1,16 +1,53 @@
-# React + Vite
+# GPA Calculator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A fast, single-page GPA calculator built for Nigerian university students — supports both 4.0 and 5.0 grading scales with automatic honor classification.
 
-Currently, two official plugins are available:
+**Live demo:** [cgpa-calculator-five-theta.vercel.app](https://cgpa-calculator-five-theta.vercel.app)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+> Note: named "GPA" rather than "CGPA" — a cumulative GPA (CGPA) implies credit-weighted averaging across semesters, which this tool doesn't do. It computes a straightforward GPA from the courses, grades, and units you enter in a single pass.
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Dual grading scales** — pick between 4.0 and 5.0 systems, each mapped to the correct honor classifications (First Class, Second Class Upper, etc.)
+- **Multi-step calculator flow** — add courses with grade and unit, get a live-updating GPA as you go
+- **Multi-format export** — download your result as PDF, CSV, XLS, or JSON via a share menu
+- **Clean, custom UI** — line-style SVG icons, restrained indigo/violet color language, Geist font, consistent focus states throughout
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **React** (Vite)
+- **jsPDF** — PDF export
+- **SheetJS (xlsx)** — Excel export
+- Vanilla CSS-in-JS styling (no framework dependency)
+
+## Getting Started
+
+```bash
+git clone https://github.com/leopoldson/cgpa-calculator.git
+cd cgpa-calculator
+npm install
+npm run dev
+```
+
+Build for production:
+
+```bash
+npm run build
+```
+
+## How It Works
+
+1. Choose your grading scale (4.0 or 5.0)
+2. Add each course with its grade and unit value
+3. GPA is calculated as total grade points ÷ total units
+4. Result is matched against the honor classification table for your chosen scale
+5. Export your result in your preferred format
+
+## Roadmap
+
+- [ ] Semester-by-semester tracking for true CGPA (credit-weighted cumulative) support
+- [ ] Save/load course lists locally
+
+## License
+
+MIT
