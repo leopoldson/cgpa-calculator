@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 const GRADE_SYSTEMS = {
   "4.0": {
@@ -46,7 +49,7 @@ function SplashScreen({ onNext }) {
         <div style={styles.splashIcon}>🎓</div>
         <h1 style={styles.splashTitle}>CGPA Calculator</h1>
         <p style={styles.splashSub}>
-          developed by <span style={{ color: "#c4b5fd", fontWeight: 700 }}>Leo✮</span>
+          Know your standing in seconds.
         </p>
         <button style={styles.splashBtn} onClick={onNext}>
           Get Started
@@ -61,7 +64,7 @@ function HomeScreen({ onCalculate }) {
     <div style={styles.screen}>
       <div style={styles.homeTop}>
         <div style={styles.homeIconWrap}>
-          <span style={{ fontSize: 48 }}>📊</span>
+          <HomeGlyph />
         </div>
         <h2 style={styles.homeTitle}>Know Your Standing</h2>
         <p style={styles.homeSub}>
@@ -86,9 +89,6 @@ function HomeScreen({ onCalculate }) {
         <button style={styles.primaryBtn} onClick={onCalculate}>
           Calculate Your CGPA
         </button>
-        <p style={styles.leoFooter}>
-          CGPA Calculator · developed by <span style={styles.leoName}>Leo✮</span>
-        </p>
       </div>
     </div>
   );
@@ -186,43 +186,21 @@ function CalculatorScreen({ onBack }) {
       <div style={styles.screen}>
         <TopBar title="" onBack={onBack} />
         <div style={styles.body}>
-          <div style={{ marginBottom: 36, marginTop: 8 }}>
-            <p style={{ fontSize: 13, fontWeight: 600, color: "#6366f1", letterSpacing: 0.5, textTransform: "uppercase", margin: "0 0 8px" }}>Step 1 of 1</p>
+          <div style={{ marginBottom: 32, marginTop: 8 }}>
             <h2 style={{ fontSize: 26, fontWeight: 700, color: "#111827", margin: "0 0 8px", lineHeight: 1.2 }}>Which grading system does your school use?</h2>
             <p style={{ fontSize: 14, color: "#9ca3af", margin: 0, lineHeight: 1.5 }}>Your CGPA will be calculated based on this scale.</p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            {[
-              { s: "4.0", desc: "Used by most private universities", grades: ["A", "B", "C", "D", "F"] },
-              { s: "5.0", desc: "Common in Nigerian public universities", grades: ["A", "B", "C", "D", "E", "F"] },
-            ].map(({ s, desc, grades }) => (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            {["4.0", "5.0"].map((s) => (
               <button
                 key={s}
                 onClick={() => handleSystemSelect(s)}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  background: "#f9fafb",
-                  border: "2px solid #e5e7eb",
-                  borderRadius: 20,
-                  padding: "20px 16px",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  transition: "border-color 0.2s, box-shadow 0.2s",
-                  gap: 10,
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(99,102,241,0.12)"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.boxShadow = "none"; }}
+                style={styles.systemBigCard}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "#4f46e5"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 12px 28px rgba(79,70,229,0.16)"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.03)"; }}
               >
-                <span style={{ fontSize: 28, fontWeight: 800, color: "#111827", letterSpacing: -1 }}>{s}</span>
-                <p style={{ fontSize: 12, color: "#6b7280", margin: 0, lineHeight: 1.4 }}>{desc}</p>
-                <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
-                  {grades.map(g => (
-                    <span key={g} style={{ fontSize: 11, fontWeight: 700, color: "#374151", background: "#e5e7eb", borderRadius: 5, padding: "1px 6px" }}>{g}</span>
-                  ))}
-                </div>
+                {s}
               </button>
             ))}
           </div>
@@ -361,28 +339,26 @@ function CalculatorScreen({ onBack }) {
     const honor = getHonor(parseFloat(result.cgpa), system);
     return (
       <div style={styles.screen}>
-        <TopBar title="Your Result" onBack={handleReset} backLabel="Start Over" />
+        <TopBar
+          title="Your Result"
+          onBack={handleReset}
+          backLabel="Start Over"
+          right={<ExportMenu result={result} system={system} honor={honor} />}
+        />
         <div style={styles.body}>
 
           <div style={{ position: "relative" }}>
-            <div className="blurred" style={{ ...styles.resultCard, borderColor: honor.color }}>
+            <div style={{ ...styles.resultCard, borderColor: honor.color + "33" }}>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: honor.color }} />
               <p style={styles.resultLabel}>Your CGPA</p>
               <p style={{ ...styles.resultCGPA, color: honor.color }}>{result.cgpa}</p>
               <p style={{ ...styles.resultHonor, color: honor.color }}>{honor.label}</p>
               <p style={styles.resultMeta}>{system} Scale · {result.totalUnits} Total Units</p>
             </div>
-            <div className="lock-overlay">
-              <span className="lock-icon">🔒</span>
-              <p className="lock-title">Your result is ready</p>
-              <p className="lock-sub">This is a demo version. Contact Leo to get the full app with your results unlocked.</p>
-              <button className="lock-btn" onClick={() => window.open("mailto:favourleopold@gmail.com?subject=CGPA Calculator - Full Access")}>
-                Contact Leo
-              </button>
-            </div>
           </div>
 
           <div style={{ position: "relative", marginTop: 8 }}>
-            <div className="blurred">
+            <div>
               <div style={styles.breakdownHeader}>Course Breakdown</div>
               {result.courses.map((c, i) => (
                 <div key={i} style={styles.breakdownRow}>
@@ -397,23 +373,232 @@ function CalculatorScreen({ onBack }) {
           </div>
 
           <button style={styles.homeBtn} onClick={onBack}>← Back to Home</button>
-
-          <p style={styles.leoFooter}>
-            CGPA Calculator · developed by <span style={styles.leoName}>Leo✮</span>
-          </p>
         </div>
       </div>
     );
   }
 }
 
-function TopBar({ title, onBack, backLabel = "Back" }) {
+function exportAsPDF(result, system, honor) {
+  const doc = new jsPDF();
+
+  doc.setFontSize(18);
+  doc.setFont(undefined, "bold");
+  doc.text("CGPA Result", 14, 20);
+
+  doc.setFontSize(11);
+  doc.setFont(undefined, "normal");
+  doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 28);
+
+  doc.setFontSize(14);
+  doc.setFont(undefined, "bold");
+  doc.text(`CGPA: ${result.cgpa}  (${honor.label})`, 14, 40);
+  doc.setFontSize(11);
+  doc.setFont(undefined, "normal");
+  doc.text(`${system} Scale · ${result.totalUnits} Total Units`, 14, 47);
+
+  autoTable(doc, {
+    startY: 55,
+    head: [["Course Code", "Title", "Units", "Grade Points"]],
+    body: result.courses.map((c) => [
+      c.code || "-",
+      c.title || "-",
+      String(c.units),
+      String(c.grade),
+    ]),
+    styles: { fontSize: 10 },
+    headStyles: { fillColor: [17, 24, 39] },
+  });
+
+  doc.save(`CGPA-Result-${result.cgpa}.pdf`);
+}
+
+function buildRows(result) {
+  return result.courses.map((c) => ({
+    "Course Code": c.code || "",
+    "Title": c.title || "",
+    "Units": c.units,
+    "Grade Points": c.grade,
+  }));
+}
+
+function downloadBlob(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportAsCSV(result, system, honor) {
+  const rows = buildRows(result);
+  const header = Object.keys(rows[0] || { "Course Code": "", "Title": "", "Units": "", "Grade Points": "" });
+  const lines = [
+    `CGPA,${result.cgpa}`,
+    `Honor,${honor.label}`,
+    `Scale,${system}`,
+    `Total Units,${result.totalUnits}`,
+    "",
+    header.join(","),
+    ...rows.map((r) => header.map((h) => `"${String(r[h]).replace(/"/g, '""')}"`).join(",")),
+  ];
+  downloadBlob(lines.join("\n"), `CGPA-Result-${result.cgpa}.csv`, "text/csv");
+}
+
+function exportAsXLSX(result, system, honor) {
+  const rows = buildRows(result);
+  const summary = [
+    { Field: "CGPA", Value: result.cgpa },
+    { Field: "Honor", Value: honor.label },
+    { Field: "Scale", Value: system },
+    { Field: "Total Units", Value: result.totalUnits },
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Summary");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Courses");
+  XLSX.writeFile(wb, `CGPA-Result-${result.cgpa}.xlsx`);
+}
+
+function exportAsJSON(result, system, honor) {
+  const payload = {
+    cgpa: result.cgpa,
+    honor: honor.label,
+    scale: system,
+    totalUnits: result.totalUnits,
+    generatedAt: new Date().toISOString(),
+    courses: result.courses.map((c) => ({
+      code: c.code,
+      title: c.title || null,
+      units: c.units,
+      gradePoints: c.grade,
+    })),
+  };
+  downloadBlob(JSON.stringify(payload, null, 2), `CGPA-Result-${result.cgpa}.json`, "application/json");
+}
+
+function TopBar({ title, onBack, backLabel = "Back", right }) {
   return (
     <div style={styles.topBar}>
       <button style={styles.backBtn} onClick={onBack}>‹ {backLabel}</button>
       <span style={styles.topBarTitle}>{title}</span>
-      <span style={{ minWidth: 64, maxWidth: 120 }} />
+      <div style={{ minWidth: 64, maxWidth: 120, display: "flex", justifyContent: "flex-end" }}>
+        {right || null}
+      </div>
     </div>
+  );
+}
+
+// ── Export menu (iOS share-sheet style) ─────────────────────────────────────
+
+function ExportMenu({ result, system, honor }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const options = [
+    { key: "pdf", label: "Export as PDF", icon: <FileIcon />, action: () => exportAsPDF(result, system, honor) },
+    { key: "csv", label: "Export as CSV", icon: <TableIcon />, action: () => exportAsCSV(result, system, honor) },
+    { key: "xlsx", label: "Export as XLS", icon: <GridIcon />, action: () => exportAsXLSX(result, system, honor) },
+    { key: "json", label: "Export as JSON", icon: <BracesIcon />, action: () => exportAsJSON(result, system, honor) },
+  ];
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        style={styles.exportIconBtn}
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Export"
+      >
+        <ExportGlyph />
+      </button>
+      {open && (
+        <div style={styles.exportMenu}>
+          {options.map((o) => (
+            <button
+              key={o.key}
+              style={styles.exportMenuItem}
+              onClick={() => { o.action(); setOpen(false); }}
+            >
+              <span style={{ width: 18, display: "flex", alignItems: "center", justifyContent: "center", color: "#6b7280" }}>{o.icon}</span>
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExportGlyph() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2v11" />
+      <path d="M8 6l4-4 4 4" />
+      <path d="M4 13v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6" />
+    </svg>
+  );
+}
+
+function FileIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M9 15h6" />
+      <path d="M9 11h6" />
+    </svg>
+  );
+}
+
+function TableIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 10h18" />
+      <path d="M9 10v10" />
+    </svg>
+  );
+}
+
+function GridIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 10h18" />
+      <path d="M3 15h18" />
+      <path d="M9 4v16" />
+      <path d="M15 4v16" />
+    </svg>
+  );
+}
+
+function BracesIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 3a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2 2 2 0 0 1 2 2v4a2 2 0 0 0 2 2" />
+      <path d="M16 3a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2 2 2 0 0 0-2 2v4a2 2 0 0 1-2 2" />
+    </svg>
+  );
+}
+
+function HomeGlyph() {
+  return (
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+      <path d="M7 16l4-5 3 3 5-7" />
+      <circle cx="19" cy="7" r="1.4" fill="#4f46e5" stroke="none" />
+    </svg>
   );
 }
 
@@ -428,6 +613,8 @@ function EntryField({ label, placeholder, value, onChange, onNext, onSkip, skipL
         onChange={(e) => onChange(e.target.value)}
         inputMode={numeric ? "numeric" : "text"}
         onKeyDown={(e) => e.key === "Enter" && onNext()}
+        onFocus={(e) => { e.target.style.borderColor = "#4f46e5"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 4px rgba(79,70,229,0.1)"; }}
+        onBlur={(e) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#f9fafb"; e.target.style.boxShadow = "none"; }}
         autoFocus
       />
       <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
@@ -451,26 +638,6 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&display=swap');
         html, body { margin: 0; padding: 0; font-family: 'Geist', sans-serif; }
         *, *::before, *::after { box-sizing: border-box; font-family: inherit; }
-        .blurred { filter: blur(10px); user-select: none; pointer-events: none; }
-        .lock-overlay {
-          position: absolute; inset: 0;
-          display: flex; flex-direction: column;
-          align-items: center; justify-content: center;
-          background: rgba(255,255,255,0.6);
-          backdrop-filter: blur(2px);
-          z-index: 10; gap: 10px; padding: 24px; text-align: center;
-        }
-        .lock-icon { font-size: 36px; }
-        .lock-title { font-size: 17px; font-weight: 700; color: #111827; margin: 0; }
-        .lock-sub { font-size: 13px; color: #6b7280; margin: 0; line-height: 1.5; }
-        .lock-btn {
-          margin-top: 6px;
-          background: #111827; color: #fff;
-          border: none; border-radius: 12px;
-          padding: 12px 28px; font-size: 14px;
-          font-weight: 600; cursor: pointer;
-          font-family: inherit;
-        }
         .app-shell {
           min-height: 100vh;
           background: #e5e7eb;
@@ -656,6 +823,23 @@ const styles = {
   },
   systemLabel: { fontWeight: 700, color: "#1e1b4b" },
   systemArrow: { color: "#6366f1", fontSize: 20 },
+  systemBigCard: {
+    aspectRatio: "1 / 1",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#fff",
+    border: "2px solid #e5e7eb",
+    borderRadius: 24,
+    fontSize: 40,
+    fontWeight: 900,
+    color: "#111827",
+    letterSpacing: -1.5,
+    cursor: "pointer",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+    transition: "border-color 0.2s, box-shadow 0.2s, transform 0.2s",
+    fontVariantNumeric: "tabular-nums",
+  },
   // Entry
   chips: { display: "flex", gap: 8, marginBottom: 24 },
   chip: {
@@ -676,6 +860,7 @@ const styles = {
     boxSizing: "border-box",
     color: "#111827",
     background: "#f9fafb",
+    transition: "border-color 0.15s, box-shadow 0.15s, background 0.15s",
   },
   nextBtn: {
     flex: 1,
@@ -733,7 +918,7 @@ const styles = {
   calcBtn: {
     width: "100%",
     marginTop: 14,
-    background: "linear-gradient(135deg, #059669, #0d9488)",
+    background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
     color: "#fff",
     border: "none",
     borderRadius: 12,
@@ -741,34 +926,78 @@ const styles = {
     fontSize: 15,
     fontWeight: 700,
     cursor: "pointer",
+    transition: "transform 0.15s, box-shadow 0.15s",
+    boxShadow: "0 4px 14px rgba(79,70,229,0.25)",
   },
   // Result
   resultCard: {
-    border: "3px solid",
-    borderRadius: 20,
-    padding: "28px 24px",
+    position: "relative",
+    overflow: "hidden",
+    border: "1.5px solid",
+    borderRadius: 22,
+    padding: "32px 24px",
     textAlign: "center",
-    marginBottom: 24,
-    background: "#fafafa",
+    marginBottom: 28,
+    background: "#fff",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 12px 32px -12px rgba(17,24,39,0.12)",
   },
-  resultLabel: { color: "#6b7280", fontSize: 14, fontWeight: 600, margin: 0 },
-  resultCGPA: { fontSize: 56, fontWeight: 900, margin: "8px 0 4px", letterSpacing: -2 },
-  resultHonor: { fontSize: 17, fontWeight: 700, margin: 0 },
-  resultMeta: { color: "#9ca3af", fontSize: 13, marginTop: 6 },
-  breakdownHeader: { fontWeight: 700, fontSize: 13, color: "#374151", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 },
+  resultLabel: { color: "#9ca3af", fontSize: 12, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: 0.8 },
+  resultCGPA: { fontSize: 60, fontWeight: 900, margin: "10px 0 4px", letterSpacing: -2.5, fontVariantNumeric: "tabular-nums" },
+  resultHonor: { fontSize: 16, fontWeight: 700, margin: 0 },
+  resultMeta: { color: "#9ca3af", fontSize: 13, marginTop: 10 },
+  breakdownHeader: { fontWeight: 700, fontSize: 12, color: "#9ca3af", marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.8 },
   breakdownRow: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "9px 0",
+    padding: "12px 4px",
     borderBottom: "1px solid #f3f4f6",
     fontSize: 14,
   },
-  bCode: { fontWeight: 700, color: "#4f46e5" },
-  bTitle: { color: "#6b7280" },
-  bGrade: { fontWeight: 600, color: "#374151", whiteSpace: "nowrap" },
+  bCode: { fontWeight: 700, color: "#111827" },
+  bTitle: { color: "#9ca3af" },
+  bGrade: { fontWeight: 600, color: "#4f46e5", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" },
+  exportIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    border: "1px solid #e5e7eb",
+    background: "#fff",
+    color: "#374151",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+  },
+  exportMenu: {
+    position: "absolute",
+    top: 44,
+    right: 0,
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 14,
+    boxShadow: "0 12px 32px rgba(0,0,0,0.12)",
+    padding: 6,
+    minWidth: 176,
+    zIndex: 50,
+  },
+  exportMenuItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    width: "100%",
+    background: "none",
+    border: "none",
+    borderRadius: 9,
+    padding: "10px 10px",
+    fontSize: 14,
+    fontWeight: 600,
+    color: "#111827",
+    cursor: "pointer",
+    textAlign: "left",
+  },
   homeBtn: {
-    marginTop: 24,
+    marginTop: 10,
     width: "100%",
     background: "#f3f4f6",
     color: "#374151",
@@ -778,17 +1007,5 @@ const styles = {
     fontSize: 15,
     fontWeight: 700,
     cursor: "pointer",
-  },
-  leoFooter: {
-    marginTop: 20,
-    textAlign: "center",
-    fontSize: 12,
-    color: "#6b7280",
-    letterSpacing: 0.3,
-    margin: "20px 0 0",
-  },
-  leoName: {
-    color: "#6366f1",
-    fontWeight: 700,
   },
 };
