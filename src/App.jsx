@@ -95,7 +95,7 @@ function HomeScreen({ onCalculate }) {
 }
 
 function CalculatorScreen({ onBack }) {
-  const [step, setStep] = useState("system"); // system | entry | result
+  const [step, setStep] = useState("system"); // system | cgpaPrompt | cgpaEntry | entry | result
   const [system, setSystem] = useState(null);
   const [courses, setCourses] = useState([]);
   const [current, setCurrent] = useState({ code: "", title: "", units: "", grade: null });
@@ -103,11 +103,45 @@ function CalculatorScreen({ onBack }) {
   const [result, setResult] = useState(null);
   const [unitsError, setUnitsError] = useState(false);
 
+  const [wantsCGPA, setWantsCGPA] = useState(false);
+  const [prevCGPA, setPrevCGPA] = useState("");
+  const [prevSemesters, setPrevSemesters] = useState("");
+  const [cgpaEntryError, setCgpaEntryError] = useState("");
+
   const gradeSystem = system ? GRADE_SYSTEMS[system] : null;
   const entrySteps = ["code", "title", "units", "grade"];
 
   function handleSystemSelect(s) {
     setSystem(s);
+    setStep("cgpaPrompt");
+  }
+
+  function handleCGPAPromptNo() {
+    setWantsCGPA(false);
+    setPrevCGPA("");
+    setPrevSemesters("");
+    setStep("entry");
+    setEntryStep("code");
+  }
+
+  function handleCGPAPromptYes() {
+    setWantsCGPA(true);
+    setStep("cgpaEntry");
+  }
+
+  function handleCGPAEntryNext() {
+    const maxScale = system === "4.0" ? 4.0 : 5.0;
+    const cg = parseFloat(prevCGPA);
+    const sem = parseInt(prevSemesters);
+    if (isNaN(cg) || cg < 0 || cg > maxScale) {
+      setCgpaEntryError(`Enter a CGPA between 0 and ${maxScale.toFixed(1)}.`);
+      return;
+    }
+    if (!sem || sem < 1 || sem > 20) {
+      setCgpaEntryError("Enter a valid number of completed semesters.");
+      return;
+    }
+    setCgpaEntryError("");
     setStep("entry");
     setEntryStep("code");
   }
@@ -142,13 +176,13 @@ function CalculatorScreen({ onBack }) {
         setCurrent({ code: prev.code, title: prev.title, units: String(prev.units), grade: null });
         setEntryStep("grade");
       } else {
-        setStep("system");
+        setStep(wantsCGPA ? "cgpaEntry" : "cgpaPrompt");
       }
     }
   }
 
-  function handleGradeSelect(g) {
-    const newCourse = { ...current, grade: g };
+  function handleGradeSelect(g, label) {
+    const newCourse = { ...current, grade: g, gradeLabel: label };
     setCurrent((c) => ({ ...c, grade: g }));
     setTimeout(() => {
       setCourses((prev) => [...prev, newCourse]);
@@ -161,13 +195,32 @@ function CalculatorScreen({ onBack }) {
     if (courses.length === 0) return;
     let totalPoints = 0;
     let totalUnits = 0;
+    let earnedUnits = 0;
     for (const c of courses) {
       const units = parseInt(c.units);
       totalPoints += c.grade * units;
       totalUnits += units;
+      if (c.grade > 0) earnedUnits += units; // a 0-point grade (F) earns no credit
     }
     const gpa = totalUnits > 0 ? totalPoints / totalUnits : 0;
-    setResult({ gpa: gpa.toFixed(2), totalUnits, courses });
+
+    let cgpa = null;
+    if (wantsCGPA) {
+      const cg = parseFloat(prevCGPA);
+      const sem = parseInt(prevSemesters);
+      // Simplified semester-weighted average (assumes each completed semester
+      // carries roughly equal weight) — not unit-weighted across your full
+      // academic history, since we only collect a prior CGPA + semester count.
+      cgpa = ((cg * sem) + gpa) / (sem + 1);
+    }
+
+    setResult({
+      gpa: gpa.toFixed(2),
+      cgpa: cgpa !== null ? cgpa.toFixed(2) : null,
+      totalUnits,
+      earnedUnits,
+      courses,
+    });
     setStep("result");
   }
 
@@ -177,6 +230,10 @@ function CalculatorScreen({ onBack }) {
     setSystem(null);
     setEntryStep("code");
     setResult(null);
+    setWantsCGPA(false);
+    setPrevCGPA("");
+    setPrevSemesters("");
+    setCgpaEntryError("");
     setStep("system");
   }
 
@@ -203,6 +260,71 @@ function CalculatorScreen({ onBack }) {
                 {s}
               </button>
             ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── CGPA prompt ──
+  if (step === "cgpaPrompt") {
+    return (
+      <div style={styles.screen}>
+        <TopBar title="" onBack={() => setStep("system")} />
+        <div style={styles.body}>
+          <div style={{ marginBottom: 32, marginTop: 8 }}>
+            <h2 style={{ fontSize: 26, fontWeight: 700, color: "#111827", margin: "0 0 8px", lineHeight: 1.2 }}>Want to see your CGPA too?</h2>
+            <p style={{ fontSize: 14, color: "#9ca3af", margin: 0, lineHeight: 1.5 }}>
+              Add your current CGPA and how many semesters you've completed, and we'll fold this semester in to show your updated CGPA alongside your GPA.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <button style={styles.primaryBtn} onClick={handleCGPAPromptYes}>Yes, add my CGPA</button>
+            <button style={styles.skipBtn} onClick={handleCGPAPromptNo}>No, just my GPA for now</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── CGPA entry ──
+  if (step === "cgpaEntry") {
+    const maxScale = system === "4.0" ? 4.0 : 5.0;
+    return (
+      <div style={styles.screen}>
+        <TopBar title="Your CGPA So Far" onBack={() => setStep("cgpaPrompt")} />
+        <div style={styles.body}>
+          <p style={styles.prompt}>Current CGPA (out of {maxScale.toFixed(1)})</p>
+          <input
+            style={styles.input}
+            placeholder={`e.g. ${system === "4.0" ? "3.42" : "4.21"}`}
+            value={prevCGPA}
+            onChange={(e) => { setPrevCGPA(e.target.value); setCgpaEntryError(""); }}
+            inputMode="decimal"
+            onFocus={(e) => { e.target.style.borderColor = "#4f46e5"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 4px rgba(79,70,229,0.1)"; }}
+            onBlur={(e) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#f9fafb"; e.target.style.boxShadow = "none"; }}
+            autoFocus
+          />
+
+          <p style={{ ...styles.prompt, marginTop: 24 }}>Semesters completed so far</p>
+          <input
+            style={styles.input}
+            placeholder="e.g. 3"
+            value={prevSemesters}
+            onChange={(e) => { setPrevSemesters(e.target.value); setCgpaEntryError(""); }}
+            inputMode="numeric"
+            onKeyDown={(e) => e.key === "Enter" && handleCGPAEntryNext()}
+            onFocus={(e) => { e.target.style.borderColor = "#4f46e5"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 4px rgba(79,70,229,0.1)"; }}
+            onBlur={(e) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#f9fafb"; e.target.style.boxShadow = "none"; }}
+          />
+
+          {cgpaEntryError && (
+            <p style={{ color: "#ef4444", fontSize: 13, marginTop: 10 }}>{cgpaEntryError}</p>
+          )}
+
+          <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+            <button style={styles.nextBtn} onClick={handleCGPAEntryNext}>Next →</button>
           </div>
         </div>
       </div>
@@ -304,7 +426,7 @@ function CalculatorScreen({ onBack }) {
                       background: current.grade === gradeSystem.points[i] ? "#6366f1" : "#f3f4f6",
                       color: current.grade === gradeSystem.points[i] ? "#fff" : "#374151",
                     }}
-                    onClick={() => handleGradeSelect(gradeSystem.points[i])}
+                    onClick={() => handleGradeSelect(gradeSystem.points[i], label)}
                   >
                     <span style={{ fontWeight: 700, fontSize: 16 }}>{label}</span>
                     <span style={{ fontSize: 12, opacity: 0.8 }}>{gradeSystem.points[i]}</span>
@@ -353,22 +475,53 @@ function CalculatorScreen({ onBack }) {
               <p style={styles.resultLabel}>Your GPA</p>
               <p style={{ ...styles.resultGPA, color: honor.color }}>{result.gpa}</p>
               <p style={{ ...styles.resultHonor, color: honor.color }}>{honor.label}</p>
-              <p style={styles.resultMeta}>{system} Scale · {result.totalUnits} Total Units</p>
+              <p style={styles.resultMeta}>{result.gpa}/{parseFloat(system).toFixed(2)}</p>
             </div>
           </div>
 
           <div style={{ position: "relative", marginTop: 8 }}>
             <div>
-              <div style={styles.breakdownHeader}>Course Breakdown</div>
+              <div style={styles.breakdownHeader}>Results Breakdown</div>
+
+              <div style={styles.breakdownTableHead}>
+                <span></span>
+                <span style={styles.breakdownColLabels}>
+                  <span style={styles.bColLabel}>Grade Pt</span>
+                  <span style={styles.bColLabel}>Units</span>
+                  <span style={styles.bColLabel}>Grade</span>
+                </span>
+              </div>
+
               {result.courses.map((c, i) => (
                 <div key={i} style={styles.breakdownRow}>
-                  <div>
+                  <div style={styles.bCourseCol}>
                     <span style={styles.bCode}>{c.code}</span>
                     {c.title && <span style={styles.bTitle}> — {c.title}</span>}
                   </div>
-                  <span style={styles.bGrade}>{c.grade} pts × {c.units} units</span>
+                  <span style={styles.bValuesCol}>
+                    <span style={styles.bValue}>{c.grade.toFixed(1)}</span>
+                    <span style={styles.bValue}>{parseFloat(c.units).toFixed(1)}</span>
+                    <span style={styles.bValue}>{c.gradeLabel || "—"}</span>
+                  </span>
                 </div>
               ))}
+
+              <div style={styles.summaryBlock}>
+                <div style={styles.summaryRow}>
+                  <span style={styles.summaryLabel}>Total Units</span>
+                  <span style={styles.summaryValue}>{result.totalUnits}</span>
+                </div>
+                <div style={styles.summaryRow}>
+                  <span style={styles.summaryLabel}>Your GPA</span>
+                  <span style={styles.summaryValue}>{result.gpa}</span>
+                </div>
+                {result.cgpa && (
+                  <div style={styles.summaryRow}>
+                    <span style={styles.summaryLabel}>Your CGPA</span>
+                    <span style={styles.summaryValue}>{result.cgpa}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -379,36 +532,66 @@ function CalculatorScreen({ onBack }) {
   }
 }
 
+function formatDateDDMMYYYY(d) {
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
 function exportAsPDF(result, system, honor) {
   const doc = new jsPDF();
+  const generatedOn = formatDateDDMMYYYY(new Date());
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const centerX = pageWidth / 2;
 
   doc.setFontSize(18);
   doc.setFont(undefined, "bold");
-  doc.text("GPA Result", 14, 20);
+  doc.text("Your Results", centerX, 20, { align: "center" });
 
   doc.setFontSize(11);
   doc.setFont(undefined, "normal");
-  doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 28);
-
-  doc.setFontSize(14);
-  doc.setFont(undefined, "bold");
-  doc.text(`GPA: ${result.gpa}  (${honor.label})`, 14, 40);
-  doc.setFontSize(11);
-  doc.setFont(undefined, "normal");
-  doc.text(`${system} Scale · ${result.totalUnits} Total Units`, 14, 47);
+  doc.text(`${result.gpa}/${parseFloat(system).toFixed(2)} · ${honor.label}`, centerX, 28, { align: "center" });
 
   autoTable(doc, {
-    startY: 55,
-    head: [["Course Code", "Title", "Units", "Grade Points"]],
-    body: result.courses.map((c) => [
-      c.code || "-",
-      c.title || "-",
-      String(c.units),
-      String(c.grade),
-    ]),
-    styles: { fontSize: 10 },
-    headStyles: { fillColor: [17, 24, 39] },
+    startY: 36,
+    head: [["Course Code", "Course Title", "Credit Units", "Credits Reg.", "Credits Earned", "Grade"]],
+    body: result.courses.map((c) => {
+      const earned = c.grade > 0 ? c.units : 0;
+      return [
+        c.code || "-",
+        c.title || "-",
+        String(c.units),
+        String(c.units),
+        String(earned),
+        c.gradeLabel || "-",
+      ];
+    }),
+    styles: { fontSize: 10, halign: "center" },
+    headStyles: { fillColor: [17, 24, 39], halign: "center" },
+    columnStyles: { 0: { halign: "center" }, 1: { halign: "center" } },
   });
+
+  const afterTableY = doc.lastAutoTable.finalY + 10;
+
+  autoTable(doc, {
+    startY: afterTableY,
+    head: [["Credits Registered", "Credits Earned", "GPA", "CGPA"]],
+    body: [[
+      String(result.totalUnits),
+      String(result.earnedUnits),
+      result.gpa,
+      result.cgpa || "—",
+    ]],
+    styles: { fontSize: 10, halign: "center" },
+    headStyles: { fillColor: [79, 70, 229], halign: "center" },
+  });
+
+  const finalY = doc.lastAutoTable.finalY + 12;
+  doc.setFontSize(9);
+  doc.setFont(undefined, "normal");
+  doc.setTextColor(120, 120, 120);
+  doc.text(`Date: ${generatedOn}`, centerX, finalY, { align: "center" });
 
   doc.save(`GPA-Result-${result.gpa}.pdf`);
 }
@@ -416,8 +599,11 @@ function exportAsPDF(result, system, honor) {
 function buildRows(result) {
   return result.courses.map((c) => ({
     "Course Code": c.code || "",
-    "Title": c.title || "",
-    "Units": c.units,
+    "Course Title": c.title || "",
+    "Credit Units": c.units,
+    "Credits Registered": c.units,
+    "Credits Earned": c.grade > 0 ? c.units : 0,
+    "Grade": c.gradeLabel || "",
     "Grade Points": c.grade,
   }));
 }
@@ -436,44 +622,63 @@ function downloadBlob(content, filename, mime) {
 
 function exportAsCSV(result, system, honor) {
   const rows = buildRows(result);
-  const header = Object.keys(rows[0] || { "Course Code": "", "Title": "", "Units": "", "Grade Points": "" });
+  const header = Object.keys(rows[0] || {
+    "Course Code": "", "Course Title": "", "Credit Units": "",
+    "Credits Registered": "", "Credits Earned": "", "Grade": "", "Grade Points": "",
+  });
+  const generatedOn = formatDateDDMMYYYY(new Date());
   const lines = [
+    "Your Results",
     `GPA,${result.gpa}`,
+    result.cgpa ? `CGPA,${result.cgpa}` : null,
     `Honor,${honor.label}`,
     `Scale,${system}`,
-    `Total Units,${result.totalUnits}`,
+    `Credits Registered,${result.totalUnits}`,
+    `Credits Earned,${result.earnedUnits}`,
     "",
     header.join(","),
     ...rows.map((r) => header.map((h) => `"${String(r[h]).replace(/"/g, '""')}"`).join(",")),
-  ];
+    "",
+    `Date,${generatedOn}`,
+  ].filter((l) => l !== null);
   downloadBlob(lines.join("\n"), `GPA-Result-${result.gpa}.csv`, "text/csv");
 }
 
 function exportAsXLSX(result, system, honor) {
   const rows = buildRows(result);
+  const generatedOn = formatDateDDMMYYYY(new Date());
   const summary = [
     { Field: "GPA", Value: result.gpa },
+    ...(result.cgpa ? [{ Field: "CGPA", Value: result.cgpa }] : []),
     { Field: "Honor", Value: honor.label },
     { Field: "Scale", Value: system },
-    { Field: "Total Units", Value: result.totalUnits },
+    { Field: "Credits Registered", Value: result.totalUnits },
+    { Field: "Credits Earned", Value: result.earnedUnits },
+    { Field: "Date", Value: generatedOn },
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Summary");
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Courses");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Results Breakdown");
   XLSX.writeFile(wb, `GPA-Result-${result.gpa}.xlsx`);
 }
 
 function exportAsJSON(result, system, honor) {
   const payload = {
     gpa: result.gpa,
+    cgpa: result.cgpa || null,
     honor: honor.label,
     scale: system,
-    totalUnits: result.totalUnits,
+    creditsRegistered: result.totalUnits,
+    creditsEarned: result.earnedUnits,
     generatedAt: new Date().toISOString(),
-    courses: result.courses.map((c) => ({
+    date: formatDateDDMMYYYY(new Date()),
+    resultsBreakdown: result.courses.map((c) => ({
       code: c.code,
       title: c.title || null,
-      units: c.units,
+      creditUnits: c.units,
+      creditsRegistered: c.units,
+      creditsEarned: c.grade > 0 ? c.units : 0,
+      grade: c.gradeLabel || null,
       gradePoints: c.grade,
     })),
   };
@@ -659,6 +864,21 @@ export default function App() {
           display: flex;
           flex-direction: column;
           position: relative;
+        }
+        @media (min-width: 900px) {
+          .app-shell {
+            background:
+              radial-gradient(circle at 18% 20%, rgba(99,102,241,0.14), transparent 42%),
+              radial-gradient(circle at 82% 78%, rgba(139,92,246,0.12), transparent 45%),
+              #eef0f4;
+            padding: 48px 20px;
+          }
+          .app-inner {
+            max-width: 560px;
+            min-height: 760px;
+            border-radius: 40px;
+            box-shadow: 0 32px 80px rgba(30,27,75,0.18);
+          }
         }
         @media (max-width: 520px) {
           .app-shell {
@@ -944,19 +1164,39 @@ const styles = {
   resultLabel: { color: "#9ca3af", fontSize: 12, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: 0.8 },
   resultGPA: { fontSize: 60, fontWeight: 900, margin: "10px 0 4px", letterSpacing: -2.5, fontVariantNumeric: "tabular-nums" },
   resultHonor: { fontSize: 16, fontWeight: 700, margin: 0 },
-  resultMeta: { color: "#9ca3af", fontSize: 13, marginTop: 10 },
+  resultMeta: { color: "#9ca3af", fontSize: 13, fontWeight: 400, marginTop: 10 },
   breakdownHeader: { fontWeight: 700, fontSize: 12, color: "#9ca3af", marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.8 },
+  breakdownTableHead: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "0 4px 6px",
+  },
+  breakdownColLabels: { display: "flex", gap: 14 },
+  bColLabel: { width: 44, textAlign: "right", fontSize: 10, fontWeight: 700, color: "#c4c9d2", textTransform: "uppercase", letterSpacing: 0.4 },
   breakdownRow: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: 12,
     padding: "12px 4px",
     borderBottom: "1px solid #f3f4f6",
     fontSize: 14,
   },
+  bCourseCol: { flex: 1, minWidth: 0 },
+  bValuesCol: { display: "flex", gap: 14, flexShrink: 0 },
+  bValue: { width: 44, textAlign: "right", fontWeight: 600, color: "#374151", fontVariantNumeric: "tabular-nums" },
   bCode: { fontWeight: 700, color: "#111827" },
   bTitle: { color: "#9ca3af" },
-  bGrade: { fontWeight: 600, color: "#4f46e5", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" },
+  summaryBlock: { marginTop: 16, paddingTop: 4 },
+  summaryRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "10px 4px",
+  },
+  summaryLabel: { fontSize: 15, fontWeight: 700, color: "#111827" },
+  summaryValue: { fontSize: 17, fontWeight: 800, color: "#4f46e5", fontVariantNumeric: "tabular-nums" },
   exportIconBtn: {
     width: 36,
     height: 36,
