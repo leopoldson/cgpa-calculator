@@ -2,7 +2,7 @@
 
 A fast, single-page GPA calculator built for Nigerian university students — supports both 4.0 and 5.0 grading scales with automatic honor classification, and an optional running CGPA calculation.
 
-**Live demo:** [cgpa-calculator-five-theta.vercel.app](https://gpa-calculator-leopold.vercel.app)
+**Live demo:** [https://gpa-calculator-leopold.vercel.app]
 
 > Note: named "GPA" rather than "CGPA" at the project level — cumulative GPA (CGPA) implies credit-weighted averaging across a student's full academic history, which this tool approximates rather than tracks exactly (see "How CGPA is calculated" below). The core per-semester result is a straightforward GPA computed from the courses, grades, and units you enter.
 
